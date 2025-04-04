@@ -1,0 +1,42 @@
+from pydantic import BaseModel
+
+class MatchSchema(BaseModel):
+    id: int
+    season: str
+    city: str
+    date: str
+    match_type: str
+    player_of_match: str
+    venue: str
+    team1: str
+    team2: str
+    toss_winner: str
+    toss_decision: str
+    winner: str
+    result: str
+    result_margin: int
+    target_runs: int
+    target_overs: int
+    super_over: bool
+    method: str
+    umpire1: str
+    umpire2: str
+
+class DeliverySchema(BaseModel):
+    match_id: int
+    inning: int
+    batting_team: str
+    bowling_team: str
+    over: int
+    ball: int
+    batter: str
+    bowler: str
+    non_striker: str
+    batsman_runs: int
+    extra_runs: int
+    total_runs: int
+    extras_type: str
+    is_wicket: bool
+    player_dismissed: str
+    dismissal_kind: str
+    fielder: str
