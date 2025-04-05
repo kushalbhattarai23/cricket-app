@@ -1,11 +1,38 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
 import 'screens/batting_screen.dart';
 import 'screens/bowling_screen.dart';
 import 'screens/teams_screen.dart';
 import 'screens/players_screen.dart';
 
+import 'notifiers/theme_notifier.dart';
+import 'widgets/settings_menu.dart';
+
 void main() {
-  runApp(MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => ThemeNotifier(),
+      child: const MyAppWrapper(),
+    ),
+  );
+}
+
+class MyAppWrapper extends StatelessWidget {
+  const MyAppWrapper({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final themeNotifier = Provider.of<ThemeNotifier>(context);
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Cricket Stats',
+      theme: ThemeData.light(),
+      darkTheme: ThemeData.dark(),
+      themeMode: themeNotifier.currentTheme,
+      home: MyApp(),
+    );
+  }
 }
 
 class MyApp extends StatefulWidget {
@@ -29,27 +56,63 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
+  void _handleMenuSelection(String value) {
+    if (value == 'theme') {
+      Provider.of<ThemeNotifier>(context, listen: false).toggleTheme();
+    } else if (value == 'language') {
+      _showLanguageDialog();
+    }
+  }
+
+  void _showLanguageDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text("Select Language"),
+        actions: [
+          TextButton(
+            onPressed: () {
+              // Replace with your actual localization logic
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Language set to English")));
+            },
+            child: Text("English"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Language set to Nepali")));
+            },
+            child: Text("नेपाली"),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(title: Text('Cricket Stats')),
-        body: _pages[_selectedIndex],
-        bottomNavigationBar: BottomNavigationBar(
-  items: const <BottomNavigationBarItem>[
-    BottomNavigationBarItem(icon: Icon(Icons.sports_cricket), label: 'Batting'),
-    BottomNavigationBarItem(icon: Icon(Icons.sports), label: 'Bowling'),
-    BottomNavigationBarItem(icon: Icon(Icons.group), label: 'Teams'),
-    BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Players'),
-  ],
-  currentIndex: _selectedIndex,
-  onTap: _onItemTapped,
-  selectedItemColor: Colors.white, // Active item color
-  unselectedItemColor: Colors.white70, // Slightly faded inactive color
-  backgroundColor: Colors.blue, // Whole navbar in blue
-  type: BottomNavigationBarType.fixed, // Ensures full background color
-),
-
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Cricket Stats'),
+        actions: [
+          SettingsMenu(onOptionSelected: _handleMenuSelection),
+        ],
+      ),
+      body: _pages[_selectedIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(icon: Icon(Icons.sports_cricket), label: 'Batting'),
+          BottomNavigationBarItem(icon: Icon(Icons.sports), label: 'Bowling'),
+          BottomNavigationBarItem(icon: Icon(Icons.group), label: 'Teams'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Players'),
+        ],
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.white70,
+        backgroundColor: Colors.blue,
+        type: BottomNavigationBarType.fixed,
       ),
     );
   }
