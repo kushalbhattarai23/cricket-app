@@ -105,11 +105,8 @@ def get_teams_stats(db: Session = Depends(get_db)):
 
 
 
-from sqlalchemy import select  # Make sure this is imported
-
 @router.get("/players/stats/")
 def get_players_stats(db: Session = Depends(get_db)):
-    # Get all distinct players
     players = db.query(distinct(Delivery.batter)).union(
         db.query(distinct(Delivery.bowler)),
         db.query(distinct(Delivery.fielder))
@@ -120,7 +117,7 @@ def get_players_stats(db: Session = Depends(get_db)):
     for player_tuple in players:
         player = player_tuple[0]
 
-        # Matches played (as batter or bowler or fielder)
+        # Match count
         match_ids_subq = db.query(distinct(Delivery.match_id)).filter(
             or_(
                 Delivery.batter == player,
@@ -131,53 +128,70 @@ def get_players_stats(db: Session = Depends(get_db)):
 
         match_count = db.query(func.count()).select_from(match_ids_subq).scalar()
 
-        # Teams played for (team1 or team2 in those matches)
-        teams = db.query(distinct(Match.team1)).filter(
-            Match.id.in_(select(match_ids_subq))
-        ).union(
-            db.query(distinct(Match.team2)).filter(
-                Match.id.in_(select(match_ids_subq))
-            )
-        ).all()
+        # Teams played for (based on role)
+        batting_teams = db.query(distinct(Delivery.batting_team)).filter(
+            Delivery.batter == player
+        )
+
+        bowling_teams = db.query(distinct(Delivery.bowling_team)).filter(
+            Delivery.bowler == player
+        )
+
+        teams = batting_teams.union(bowling_teams).all()
         team_names = list(set([t[0] for t in teams]))
 
-        # Wickets taken
-        wickets = db.query(func.count()).filter(
-            Delivery.bowler == player,
-            Delivery.player_dismissed != None,
-            Delivery.dismissal_kind != 'run out'
-        ).scalar()
-
-        # Total runs & balls (batting)
+        # Batting
         batting_data = db.query(
             func.sum(Delivery.batsman_runs),
             func.count(Delivery.ball)
         ).filter(Delivery.batter == player).first()
-
         total_runs = batting_data[0] or 0
         total_balls = batting_data[1] or 0
         strike_rate = (total_runs / total_balls * 100) if total_balls > 0 else 0
 
-        # Catches
+        # Bowling
+        total_wickets = db.query(func.count()).filter(
+            Delivery.bowler == player,
+            Delivery.player_dismissed != None,
+            Delivery.dismissal_kind != 'run out'
+        ).scalar() or 0
+
+        # Fielding
         catches = db.query(func.count()).filter(
             Delivery.fielder == player,
             Delivery.dismissal_kind == 'caught'
-        ).scalar()
+        ).scalar() or 0
 
-        # Runouts
         runouts = db.query(func.count()).filter(
             Delivery.fielder == player,
             Delivery.dismissal_kind == 'run out'
-        ).scalar()
+        ).scalar() or 0
+
+        # Color classification
+        if total_runs >= 300 and total_wickets >= 10:
+            role = "All-Rounder"
+            color = "#FFD700"  # Gold
+        elif total_runs >= 300:
+            role = "Batter"
+            color = "#00BFFF"  # DeepSkyBlue
+        elif total_wickets >= 10:
+            role = "Bowler"
+            color = "#32CD32"  # LimeGreen
+        else:
+            role = "Other"
+            color = "#D3D3D3"  # LightGray
 
         player_stats.append({
             "player": player,
             "teams": team_names,
             "matches_played": match_count,
-            "total_wickets": wickets or 0,
+            "total_runs": total_runs,
+            "total_wickets": total_wickets,
             "strike_rate": round(strike_rate, 2),
-            "catches": catches or 0,
-            "runouts": runouts or 0
+            "catches": catches,
+            "runouts": runouts,
+            "role": role,
+            "color": color
         })
 
     return player_stats

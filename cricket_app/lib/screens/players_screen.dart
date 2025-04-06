@@ -2,13 +2,44 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+class Player {
+  final String name;
+  final String role;
+  final int matches;
+  final int runs;
+  final int wickets;
+  final String color;
+
+  Player({
+    required this.name,
+    required this.role,
+    required this.matches,
+    required this.runs,
+    required this.wickets,
+    required this.color,
+  });
+
+  factory Player.fromJson(Map<String, dynamic> json) {
+    return Player(
+      name: json['player'],
+      role: json['role'],
+      matches: json['matches_played'],
+      runs: json['total_runs'],
+      wickets: json['total_wickets'],
+      color: json['color'],
+    );
+  }
+}
+
 class PlayersScreen extends StatefulWidget {
+  const PlayersScreen({Key? key}) : super(key: key);
+
   @override
   _PlayersScreenState createState() => _PlayersScreenState();
 }
 
 class _PlayersScreenState extends State<PlayersScreen> {
-  List<dynamic> players = [];
+  List<Player> players = [];
   bool isLoading = true;
 
   @override
@@ -18,62 +49,49 @@ class _PlayersScreenState extends State<PlayersScreen> {
   }
 
   Future<void> fetchPlayers() async {
-    final response = await http.get(Uri.parse('http://127.0.0.1:8000/players/stats/'));
+    try {
+      final response = await http.get(Uri.parse('http://127.0.0.1:8000/matches/players/stats/'));
 
-    if (response.statusCode == 200) {
-      setState(() {
-        players = json.decode(response.body);
-        isLoading = false;
-      });
-    } else {
-      setState(() {
-        isLoading = false;
-      });
+      if (response.statusCode == 200) {
+        final List<dynamic> jsonData = json.decode(response.body);
+        setState(() {
+          players = jsonData.map((data) => Player.fromJson(data)).toList();
+          isLoading = false;
+        });
+      } else {
+        throw Exception('Failed to load players');
+      }
+    } catch (e) {
+      print("Error fetching players: $e");
+      setState(() => isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Players'),
-        backgroundColor: Colors.deepPurple,
-      ),
+      appBar: AppBar(title: const Text('Players Stats')),
       body: isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator())
           : ListView.builder(
               itemCount: players.length,
               itemBuilder: (context, index) {
                 final player = players[index];
-                return ListTile(
-                  leading: CircleAvatar(
-                    child: Text(player['player'][0]), // First letter of name
+                final cardColor = Color(int.parse(player.color.replaceFirst('#', '0xff')));
+
+                return Card(
+                  color: cardColor,
+                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: ListTile(
+                    title: Text(
+                      player.name,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Text(
+                      "${player.role} | Matches: ${player.matches} | Runs: ${player.runs} | Wickets: ${player.wickets}",
+                    ),
                   ),
-                  title: Text(player['player']),
-                  subtitle: Text("Teams: ${player['teams'].join(', ')}"),
-                  trailing: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text("Matches: ${player['matches_played']}"),
-                      Text("Wickets: ${player['total_wickets']}"),
-                    ],
-                  ),
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (_) => AlertDialog(
-                        title: Text(player['player']),
-                        content: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text("Strike Rate: ${player['strike_rate']}"),
-                            Text("Catches: ${player['catches']}"),
-                            Text("Runouts: ${player['runouts']}"),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
                 );
               },
             ),
