@@ -19,7 +19,7 @@ class _TeamsScreenState extends State<TeamsScreen> {
 
   // Function to fetch team stats (name and matches played) from the API
   Future<void> fetchTeams() async {
-    final response = await http.get(Uri.parse('http://127.0.0.1:8000/matches/teams/stats/'));
+    final response = await http.get(Uri.parse('https://cricket-app-4xbb.onrender.com/matches/teams/stats/'));
 
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body); // Parse the response
