@@ -22,7 +22,7 @@ class _BattingScreenState extends State<BattingScreen> {
 
   Future<void> fetchBattingData() async {
     try {
-      final response = await http.get(Uri.parse('http://127.0.0.1:8000/matches/batting_data/'));
+      final response = await http.get(Uri.parse('https://cricket-app-4xbb.onrender.com/matches/batting_data/'));
 
       if (response.statusCode == 200) {
         List<dynamic> data = json.decode(response.body);
