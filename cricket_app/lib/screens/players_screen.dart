@@ -50,7 +50,7 @@ class _PlayersScreenState extends State<PlayersScreen> {
 
   Future<void> fetchPlayers() async {
     try {
-      final response = await http.get(Uri.parse('http://127.0.0.1:8000/matches/players/stats/'));
+      final response = await http.get(Uri.parse('https://cricket-app-4xbb.onrender.com/matches/players/stats/'));
 
       if (response.statusCode == 200) {
         final List<dynamic> jsonData = json.decode(response.body);
