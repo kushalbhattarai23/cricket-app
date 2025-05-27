@@ -21,7 +21,7 @@ class _BowlingScreenState extends State<BowlingScreen> {
   }
 
   Future<void> fetchBowlingData() async {
-    final response = await http.get(Uri.parse('http://127.0.0.1:8000/matches/bowling_data/'));
+    final response = await http.get(Uri.parse('https://cricket-app-4xbb.onrender.com/matches/bowling_data/'));
 
     if (response.statusCode == 200) {
       List<dynamic> data = json.decode(response.body);
